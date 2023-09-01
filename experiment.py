@@ -65,6 +65,7 @@ data = digits.images.reshape((n_samples, -1))
 # Create a classifier: a support vector classifier
 clf = svm.SVC(gamma=0.001)
 
+
 # 4. Data splitting -- to create train and test sets
 # Split data into 50% train and 50% test subsets
 X_train, X_test, y_train, y_test = train_test_split(
@@ -79,9 +80,20 @@ clf.fit(X_train, y_train)
 # Predict the value of the digit on the test subset
 predicted = clf.predict(X_test)
 
+# 3. Data splitting -- to create train, dev, and test sets
+# Split data into train, dev, and test subsets
+X_train, X_dev, X_test, y_train, y_dev, y_test = split_train_dev_test(data, digits.target, test_size=0.2, dev_size=0.1)
+
+# 4. Model training on the training set
+clf.fit(X_train, y_train)
+
+# 5. Model Prediction on the test data and evaluation
+predicted = predict_and_eval(clf, X_test, y_test)
+
 ###############################################################################
 # Below we visualize the first 4 test samples and show their predicted
 # digit value in the title.
+
 
 # 7. Qualitative sanity check of prediction
 _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
@@ -90,6 +102,17 @@ for ax, image, prediction in zip(axes, X_test, predicted):
     image = image.reshape(8, 8)
     ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
+
+# 6. Qualitative sanity check of prediction
+_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
+for ax, image, label, prediction in zip(axes, X_test, y_test, predicted):
+    ax.set_axis_off()
+    image = image.reshape(8, 8)
+    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
+    ax.set_title(f"True: {label}\nPredicted: {prediction}")
+
+plt.show()
+
 
 ###############################################################################
 # :func:`~sklearn.metrics.classification_report` builds a text report showing
