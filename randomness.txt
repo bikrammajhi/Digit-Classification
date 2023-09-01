@@ -1,0 +1,11 @@
+places of randomness
+
+1. creating the split
+    - freezing the data
+1.5 -- ordering in which data appear (learing is iterative)
+2. model
+    - weight initialization
+    - 
+
+
+
