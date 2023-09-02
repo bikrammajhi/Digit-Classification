@@ -1,63 +1,8 @@
-"""
-================================
-Recognizing hand-written digits
-================================
-
-This example shows how scikit-learn can be used to recognize images of
-hand-written digits, from 0-9.
-
-"""
-
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
-
-# Standard scientific Python imports
-import matplotlib.pyplot as plt
-
 # Import datasets, classifiers, and performance metrics
+import matplotlib.pyplot as plt
 from sklearn import datasets, metrics, svm
 from sklearn.model_selection import train_test_split
-
-# Function to preprocess data by flattening images
-def preprocess_data(images):
-    n_samples = len(images)
-    data = images.reshape((n_samples, -1))
-    return data
-
-# Function to split data into train, dev, and test sets
-def split_train_dev_test(X, y, test_size, dev_size):
-    # Ensure that test_size and dev_size sum up to less than 1.0
-    assert test_size + dev_size < 1.0, "Test and dev sizes sum to more than 1.0"
-    
-    # First, split the data into training and the rest
-    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=(test_size + dev_size), random_state=42)
-    
-    # Calculate the ratio of the remaining data to be used for the development set
-    dev_ratio = dev_size / (test_size + dev_size)
-    
-    # Now, split the remaining data into dev and test sets
-    X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=dev_ratio, random_state=42)
-    
-    return X_train, X_dev, X_test, y_train, y_dev, y_test
-
-# Function to predict and evaluate a model on the test data
-def predict_and_eval(model, X_test, y_test):
-    # Predict the labels on the test set
-    predicted = model.predict(X_test)
-
-    # Print the classification report
-    print(
-        f"Classification report for classifier {model}:\n"
-        f"{metrics.classification_report(y_test, predicted)}\n"
-    )
-
-    # Plot the confusion matrix
-    disp = metrics.ConfusionMatrixDisplay.from_estimator(model, X_test, y_test)
-    disp.figure_.suptitle("Confusion Matrix")
-    print(f"Confusion matrix:\n{disp.confusion_matrix}")
-
-    plt.show()
-    return predicted
+from utils import preprocess_data, train_model, split_train_dev_test, predict_and_eval
 
 ###############################################################################
 # Digits dataset
@@ -138,7 +83,7 @@ print(
 # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
 # true digit values and the predicted digit values.
 
-disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, predicted)
+disp = metrics.ConfusionMatrixDisplay.from_estimator(clf, X_test, y_test)
 disp.figure_.suptitle("Confusion Matrix")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 
@@ -149,7 +94,6 @@ plt.show()
 # :ref:`confusion matrix <confusion_matrix>` and not in terms of `y_true` and
 # `y_pred`, one can still build a :func:`~sklearn.metrics.classification_report`
 # as follows:
-
 
 # The ground truth and predicted lists
 y_true = []
