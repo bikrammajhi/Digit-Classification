@@ -1,25 +1,50 @@
 name: GitHub Actions Demo
 on: [push]
+
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         python-version: [3.8.1]
+
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v2
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+      # Step 1: Display information about the trigger event
+      - name: Display Event Information
         run: |
-          ls -r ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-      - name: Install dep
-        run:  pip3 install --no-cache-dir -r requirements.txt
-      - name: Run test cases
-        run: python3 experiment.py
-          # pytest
+          echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+          echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+          echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      # Step 2: Check out the repository code
+      - name: Check Out Repository
+        uses: actions/checkout@v2
+
+      # Step 3: Display repository information
+      - name: Display Repository Information
+        run: |
+          echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+          echo "🖥️ The workflow is now ready to test your code on the runner."
+
+      # Step 4: List files in the repository
+      - name: List Files in Repository
+        run: |
+          ls -R ${{ github.workspace }}
+
+      # Step 5: Display job status
+      - name: Display Job Status
+        run: |
+          echo "🍏 This job's status is ${{ job.status }}."
+
+      # Step 6: Install dependencies
+      - name: Install Dependencies
+        run: |
+          pip3 install --no-cache-dir -r requirements.txt
+
+      # Step 7: Run test cases
+      - name: Run Test Cases
+        run: |
+          python3 experiment.py
+          # You can add more specific test commands here, e.g., pytest
+
