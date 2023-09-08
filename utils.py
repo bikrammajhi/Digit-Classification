@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 from sklearn import datasets, metrics, svm
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 # Read digits
 def read_digits():
@@ -64,3 +65,27 @@ def predict_and_eval(model, X_test, y_test):
 
     plt.show()
     return predicted
+
+
+def tune_hparams(X_train, y_train, X_dev, y_dev, list_of_all_param_combinations):
+    best_accuracy = 0.0
+    best_hparams = None
+    best_model = None
+
+    for param_combination in list_of_all_param_combinations:
+        # Create a model with the current hyperparameter combination
+        model = train_model(X_train, y_train, param_combination)
+        
+        # Evaluate the model on the development set
+        y_dev_pred = model.predict(X_dev)
+        accuracy = accuracy_score(y_dev, y_dev_pred)
+        
+        # Check if this hyperparameter combination resulted in a better model
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_hparams = param_combination
+            best_model = model
+
+    return best_hparams, best_model, best_accuracy
+
+
