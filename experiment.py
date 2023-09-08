@@ -1,8 +1,9 @@
 # Import datasets, classifiers, and performance metrics
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn import datasets, metrics, svm
 from sklearn.model_selection import train_test_split
-from utils import preprocess_data, train_model, split_train_dev_test, predict_and_eval
+from utils import preprocess_data, train_model, split_train_dev_test, predict_and_eval, tune_hparams, accuracy_score
 
 ###############################################################################
 # Digits dataset
@@ -111,3 +112,56 @@ print(
     "Classification report rebuilt from confusion matrix:\n"
     f"{metrics.classification_report(y_true, y_pred)}\n"
 )
+
+# Define a list of hyperparameter combinations as dictionaries
+param_combinations = [
+    {'C': 1.0, 'kernel': 'linear'},
+    {'C': 0.1, 'kernel': 'rbf'},
+    {'C': 0.01, 'kernel': 'linear'},
+    {'C': 0.001, 'kernel': 'rbf'},
+    {'C': 10.0, 'kernel': 'linear'},
+]
+
+# Loop through different hyperparameter combinations
+best_hparams = None
+best_accuracy = 0.0
+
+for param_combination in param_combinations:
+    # Hyperparameter Tuning
+    current_best_hparams, _, current_best_accuracy = tune_hparams(X_train, y_train, X_dev, y_dev, [param_combination])
+    
+    if current_best_accuracy > best_accuracy:
+        best_hparams = current_best_hparams
+        best_accuracy = current_best_accuracy
+
+# Print the best hyperparameters after the hyperparameter tuning loop
+print("Best Hyperparameters:", best_hparams)
+
+# Define a list of test_size and dev_size values
+test_size_values = [0.1, 0.2, 0.3]
+dev_size_values = [0.1, 0.2, 0.3]
+
+# Loop through different test_size and dev_size combinations
+for test_size in test_size_values:
+    for dev_size in dev_size_values:
+        # Calculate train_size based on test_size and dev_size
+        train_size = 1.0 - test_size - dev_size
+
+        # Split the data into train, dev, and test sets
+        X_train, X_dev, X_test, y_train, y_dev, y_test = split_train_dev_test(data, digits.target, test_size, dev_size)
+
+        # Define model parameters
+        model_params = best_hparams  # Use the best hyperparameters
+
+        # Train a model using the training data
+        model = train_model(X_train, y_train, model_params)
+
+        # Evaluate the model on the training, dev, and test sets
+        train_acc = accuracy_score(y_train, model.predict(X_train))
+        dev_acc = accuracy_score(y_dev, model.predict(X_dev))
+        test_acc = accuracy_score(y_test, model.predict(X_test))
+
+        # Print the results
+        print(f"Test Size={test_size}, Dev Size={dev_size}, Train Size={train_size:.2f}")
+        print(f"Train Accuracy={train_acc:.2f}, Dev Accuracy={dev_acc:.2f}, Test Accuracy={test_acc:.2f}")
+        print("="*50)  # Separate results for different combinations
