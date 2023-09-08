@@ -1,6 +1,5 @@
 # Import datasets, classifiers, and performance metrics
 import matplotlib.pyplot as plt
-import numpy as np
 from sklearn import datasets, metrics, svm
 from sklearn.model_selection import train_test_split
 from utils import preprocess_data, train_model, split_train_dev_test, predict_and_eval, tune_hparams, accuracy_score
