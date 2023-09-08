@@ -19,7 +19,7 @@ jobs:
           ls -r ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Install dep
-        run:  pip3 install --no-cache-dir -r requirements.txt
+        run:  pip3 install --no-cache-dir -r requirement.txt
       - name: Run test cases
         run: python3 experiment.py
           # pytest
