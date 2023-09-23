@@ -47,8 +47,8 @@ jobs:
         run: |
           python3 experiment.py
           # You can add more specific test commands here, e.g., pytest
-      
-      # Step 8: For test
-      - name: Class Test-1
-        run: print("This is for class test 1")
+      - run: echo "print("This is for class test 1")"
+      # # Step 8: For test
+      # - name: Class Test-1
+      #   run: print("This is for class test 1")
 
