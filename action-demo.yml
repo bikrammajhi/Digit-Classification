@@ -40,11 +40,15 @@ jobs:
       # Step 6: Install dependencies
       - name: Install Dependencies
         run: |
-          pip3 install --no-cache-dir -r requirements.txt
+          pip3 install --no-cache-dir -r requirement.txt
 
       # Step 7: Run test cases
       - name: Run Test Cases
         run: |
           python3 experiment.py
           # You can add more specific test commands here, e.g., pytest
+      
+      # Step 8: For test
+      - name: Class Test-1
+        run: print("This is for class test 1")
 

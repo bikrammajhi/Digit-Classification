@@ -21,6 +21,10 @@ from utils import preprocess_data, train_model, split_train_dev_test, predict_an
 # 1. Get the data
 digits = datasets.load_digits()
 
+# Print the height and width of the images
+height, width = digits.images[0].shape
+print(f"This is the height: {height}, width: {width}")
+
 # Qualitative sanity check of the data
 _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
 for ax, image, label in zip(axes, digits.images, digits.target):
@@ -41,6 +45,11 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 # 2. Data Preprocessing
 # Flatten the images
 data = preprocess_data(digits.images)
+
+# Number of samples in the data
+n = len(data)
+print(f"This is the number of samples: {n}")
+
 
 # Create a classifier: a support vector classifier
 clf = svm.SVC(gamma=0.001)
