@@ -1,92 +1,86 @@
-# Import necessary libraries
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn import datasets, metrics, svm
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn import svm, tree, datasets, metrics
+from joblib import dump, load
+# we will put all utils here
 
-# Read digits
+def get_combinations(param_name, param_values, base_combinations):    
+    new_combinations = []
+    for value in param_values:
+        for combination in base_combinations:
+            combination[param_name] = value
+            new_combinations.append(combination.copy())    
+    return new_combinations
+
+def get_hyperparameter_combinations(dict_of_param_lists):    
+    base_combinations = [{}]
+    for param_name, param_values in dict_of_param_lists.items():
+        base_combinations = get_combinations(param_name, param_values, base_combinations)
+    return base_combinations
+
+def tune_hparams(X_train, y_train, X_dev, y_dev, h_params_combinations, model_type="svm"):
+    best_accuracy = -1
+    best_model_path = ""
+    for h_params in h_params_combinations:
+        # 5. Model training
+        model = train_model(X_train, y_train, h_params, model_type=model_type)
+        # Predict the value of the digit on the test subset        
+        cur_accuracy, _, _ = predict_and_eval(model, X_dev, y_dev)
+        if cur_accuracy > best_accuracy:
+            best_accuracy = cur_accuracy
+            best_hparams = h_params
+            best_model_path = "./models/{}_".format(model_type) +"_".join(["{}:{}".format(k,v) for k,v in h_params.items()]) + ".joblib"
+            best_model = model
+
+    # save the best_model    
+    dump(best_model, best_model_path) 
+
+
+    return best_hparams, best_model_path, best_accuracy 
+
+
+
 def read_digits():
     digits = datasets.load_digits()
-    x = digits.images
-    y = digits.target 
-    return x, y
+    X = digits.images
+    y = digits.target
+    return X, y 
 
-# Preprocess data
 def preprocess_data(data):
+    # flatten the images
     n_samples = len(data)
     data = data.reshape((n_samples, -1))
     return data
 
-# Split data into train and test subsets
-def split_data(X, y, test_size=0.5, random_state=1):
+# Split data into 50% train and 50% test subsets
+def split_data(x, y, test_size, random_state=1):
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, shuffle=False
+    x, y, test_size=test_size, shuffle = True
     )
     return X_train, X_test, y_train, y_test
 
-# Create a classifier: a support vector classifier
-def train_model(X, y, model_params, model_type='svm'):
-    if model_type == 'svm':
-        clf = svm.SVC(**model_params)
-    clf.fit(X, y)
-    return clf
+# train the model of choice with the model prameter
+def train_model(x, y, model_params, model_type="svm"):
+    if model_type == "svm":
+        # Create a classifier: a support vector classifier
+        clf = svm.SVC
+    if model_type == "tree":
+        # Create a classifier: a decision tree classifier
+        clf = tree.DecisionTreeClassifier
+    model = clf(**model_params)
+    # train the model
+    model.fit(x, y)
+    return model
 
-# Function to split data into train, dev, and test sets
-def split_train_dev_test(X, y, test_size, dev_size):
-    # Ensure that test_size and dev_size sum up to less than 1.0
-    assert test_size + dev_size < 1.0, "Test and dev sizes sum to more than 1.0"
-    
-    # First, split the data into training and the rest
-    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=(test_size + dev_size), random_state=42)
-    
-    # Calculate the ratio of the remaining data to be used for the development set
-    dev_ratio = dev_size / (test_size + dev_size)
-    
-    # Now, split the remaining data into dev and test sets
-    X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=dev_ratio, random_state=42)
-    
-    return X_train, X_dev, X_test, y_train, y_dev, y_test
 
-# Function to predict and evaluate a model on the test data
+def train_test_dev_split(X, y, test_size, dev_size):
+    X_train_dev, X_test, Y_train_Dev, y_test =  split_data(X, y, test_size=test_size, random_state=1)
+    print("train+dev = {} test = {}".format(len(Y_train_Dev),len(y_test)))
+    
+    X_train, X_dev, y_train, y_dev = split_data(X_train_dev, Y_train_Dev, dev_size/(1-test_size), random_state=1)
+        
+    return X_train, X_test, X_dev, y_train, y_test, y_dev
+
+# Question 2:
 def predict_and_eval(model, X_test, y_test):
-    # Predict the labels on the test set
     predicted = model.predict(X_test)
-
-    # Print the classification report
-    print(
-        f"Classification report for classifier {model}:\n"
-        f"{metrics.classification_report(y_test, predicted)}\n"
-    )
-
-    # Plot the confusion matrix
-    disp = metrics.ConfusionMatrixDisplay.from_estimator(model, X_test, y_test)
-    disp.figure_.suptitle("Confusion Matrix")
-    print(f"Confusion matrix:\n{disp.confusion_matrix}")
-
-    plt.show()
-    return predicted
-
-
-def tune_hparams(X_train, y_train, X_dev, y_dev, list_of_all_param_combinations):
-    best_accuracy = 0.0
-    best_hparams = None
-    best_model = None
-
-    for param_combination in list_of_all_param_combinations:
-        # Create a model with the current hyperparameter combination
-        model = train_model(X_train, y_train, param_combination)
-        
-        # Evaluate the model on the development set
-        y_dev_pred = model.predict(X_dev)
-        accuracy = accuracy_score(y_dev, y_dev_pred)
-        
-        # Check if this hyperparameter combination resulted in a better model
-        if accuracy > best_accuracy:
-            best_accuracy = accuracy
-            best_hparams = param_combination
-            best_model = model
-
-    return best_hparams, best_model, best_accuracy
-
-
+    return metrics.accuracy_score(y_test, predicted), metrics.f1_score(y_test, predicted, average="macro"), predicted

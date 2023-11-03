@@ -1,175 +1,94 @@
-# Import datasets, classifiers, and performance metrics
-import matplotlib.pyplot as plt
-from sklearn import datasets, metrics, svm
-from sklearn.model_selection import train_test_split
-from utils import preprocess_data, train_model, split_train_dev_test, predict_and_eval, tune_hparams, accuracy_score
+"""
+================================
+Recognizing hand-written digits
+================================
 
-###############################################################################
-# Digits dataset
-# --------------
-#
-# The digits dataset consists of 8x8
-# pixel images of digits. The ``images`` attribute of the dataset stores
-# 8x8 arrays of grayscale values for each image. We will use these arrays to
-# visualize the first 4 images. The ``target`` attribute of the dataset stores
-# the digit each image represents and this is included in the title of the 4
-# plots below.
-#
-# Note: if we were working from image files (e.g., 'png' files), we would load
-# them using :func:`matplotlib.pyplot.imread`.
+This example shows how scikit-learn can be used to recognize images of
+hand-written digits, from 0-9.
 
-# 1. Get the data
-digits = datasets.load_digits()
+"""
 
-# Print the height and width of the images
-height, width = digits.images[0].shape
-print(f"This is the height: {height}, width: {width}")
+# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
+# License: BSD 3 clause
 
-# Qualitative sanity check of the data
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, label in zip(axes, digits.images, digits.target):
-    ax.set_axis_off()
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
-    ax.set_title("Training: %i" % label)
+# Import datasets, classifiers and performance metrics
+from sklearn import metrics, svm
 
-###############################################################################
-# Classification
-# --------------
-#
-# To apply a classifier on this data, we need to flatten the images, turning
-# each 2-D array of grayscale values from shape ``(8, 8)`` into shape
-# ``(64,)``. Subsequently, the entire dataset will be of shape
-# ``(n_samples, n_features)``, where ``n_samples`` is the number of images and
-# ``n_features`` is the total number of pixels in each image.
+from utils import preprocess_data, split_data, train_model, read_digits, predict_and_eval, train_test_dev_split, get_hyperparameter_combinations, tune_hparams
+from joblib import dump, load
+import pandas as pd
 
-# 2. Data Preprocessing
-# Flatten the images
-data = preprocess_data(digits.images)
+num_runs  = 1
+# 1. Get the dataset
+X, y = read_digits()
 
-# Number of samples in the data
-n = len(data)
-print(f"This is the number of samples: {n}")
+# 2. Hyperparameter combinations
+classifier_param_dict = {}
+# 2.1. SVM
+gamma_list = [0.0001, 0.0005, 0.001, 0.01, 0.1, 1]
+C_list = [0.1, 1, 10, 100, 1000]
+h_params={}
+h_params['gamma'] = gamma_list
+h_params['C'] = C_list
+h_params_combinations = get_hyperparameter_combinations(h_params)
+classifier_param_dict['svm'] = h_params_combinations
+
+# 2.2 Decision Tree
+max_depth_list = [5, 10, 15, 20, 50, 100]
+h_params_tree = {}
+h_params_tree['max_depth'] = max_depth_list
+h_params_trees_combinations = get_hyperparameter_combinations(h_params_tree)
+classifier_param_dict['tree'] = h_params_trees_combinations
 
 
-# Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001)
-
-# 3. Data splitting -- to create train, dev, and test sets
-# Split data into train, dev, and test subsets
-X_train, X_dev, X_test, y_train, y_dev, y_test = split_train_dev_test(data, digits.target, test_size=0.2, dev_size=0.1)
-
-# 4. Model training on the training set
-clf.fit(X_train, y_train)
-
-# 5. Model Prediction on the test data and evaluation
-predicted = predict_and_eval(clf, X_test, y_test)
-
-###############################################################################
-# Below we visualize the first 4 test samples and show their predicted
-# digit value in the title.
-
-# 6. Qualitative sanity check of prediction
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, label, prediction in zip(axes, X_test, y_test, predicted):
-    ax.set_axis_off()
-    image = image.reshape(8, 8)
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
-    ax.set_title(f"True: {label}\nPredicted: {prediction}")
-
-plt.show()
-
-###############################################################################
-# :func:`~sklearn.metrics.classification_report` builds a text report showing
-# the main classification metrics.
-
-# 8. Evaluation 
-print(
-    f"Classification report for classifier {clf}:\n"
-    f"{metrics.classification_report(y_test, predicted)}\n"
-)
-
-###############################################################################
-# We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
-# true digit values and the predicted digit values.
-
-disp = metrics.ConfusionMatrixDisplay.from_estimator(clf, X_test, y_test)
-disp.figure_.suptitle("Confusion Matrix")
-print(f"Confusion matrix:\n{disp.confusion_matrix}")
-
-plt.show()
-
-###############################################################################
-# If the results from evaluating a classifier are stored in the form of a
-# :ref:`confusion matrix <confusion_matrix>` and not in terms of `y_true` and
-# `y_pred`, one can still build a :func:`~sklearn.metrics.classification_report`
-# as follows:
-
-# The ground truth and predicted lists
-y_true = []
-y_pred = []
-cm = disp.confusion_matrix
-
-# For each cell in the confusion matrix, add the corresponding ground truths
-# and predictions to the lists
-for gt in range(len(cm)):
-    for pred in range(len(cm)):
-        y_true += [gt] * cm[gt][pred]
-        y_pred += [pred] * cm[gt][pred]
-
-print(
-    "Classification report rebuilt from confusion matrix:\n"
-    f"{metrics.classification_report(y_true, y_pred)}\n"
-)
-
-# Define a list of hyperparameter combinations as dictionaries
-param_combinations = [
-    {'C': 1.0, 'kernel': 'linear'},
-    {'C': 0.1, 'kernel': 'rbf'},
-    {'C': 0.01, 'kernel': 'linear'},
-    {'C': 0.001, 'kernel': 'rbf'},
-    {'C': 10.0, 'kernel': 'linear'},
-]
-
-# Loop through different hyperparameter combinations
-best_hparams = None
-best_accuracy = 0.0
-
-for param_combination in param_combinations:
-    # Hyperparameter Tuning
-    current_best_hparams, _, current_best_accuracy = tune_hparams(X_train, y_train, X_dev, y_dev, [param_combination])
+results = []
+test_sizes =  [0.2]
+dev_sizes  =  [0.2]
+for cur_run_i in range(num_runs):
     
-    if current_best_accuracy > best_accuracy:
-        best_hparams = current_best_hparams
-        best_accuracy = current_best_accuracy
+    for test_size in test_sizes:
+        for dev_size in dev_sizes:
+            train_size = 1- test_size - dev_size
+            # 3. Data splitting -- to create train and test sets                
+            X_train, X_test, X_dev, y_train, y_test, y_dev = train_test_dev_split(X, y, test_size=test_size, dev_size=dev_size)
+            # 4. Data preprocessing
+            X_train = preprocess_data(X_train)
+            X_test = preprocess_data(X_test)
+            X_dev = preprocess_data(X_dev)
 
-# Print the best hyperparameters after the hyperparameter tuning loop
-print("Best Hyperparameters:", best_hparams)
+            binary_preds = {}
+            model_preds = {}
+            for model_type in classifier_param_dict:
+                current_hparams = classifier_param_dict[model_type]
+                best_hparams, best_model_path, best_accuracy  = tune_hparams(X_train, y_train, X_dev, 
+                y_dev, current_hparams, model_type)        
+            
+                # loading of model         
+                best_model = load(best_model_path) 
 
-# Define a list of test_size and dev_size values
-test_size_values = [0.1, 0.2, 0.3]
-dev_size_values = [0.1, 0.2, 0.3]
+                test_acc, test_f1, predicted_y = predict_and_eval(best_model, X_test, y_test)
+                train_acc, train_f1, _ = predict_and_eval(best_model, X_train, y_train)
+                dev_acc = best_accuracy
 
-# Loop through different test_size and dev_size combinations
-for test_size in test_size_values:
-    for dev_size in dev_size_values:
-        # Calculate train_size based on test_size and dev_size
-        train_size = 1.0 - test_size - dev_size
+                print("{}\ttest_size={:.2f} dev_size={:.2f} train_size={:.2f} train_acc={:.2f} dev_acc={:.2f} test_acc={:.2f}, test_f1={:.2f}".format(model_type, test_size, dev_size, train_size, train_acc, dev_acc, test_acc, test_f1))
+                cur_run_results = {'model_type': model_type, 'run_index': cur_run_i, 'train_acc' : train_acc, 'dev_acc': dev_acc, 'test_acc': test_acc}
+                results.append(cur_run_results)
+                binary_preds[model_type] = y_test == predicted_y
+                model_preds[model_type] = predicted_y
+                
+                print("{}-GroundTruth Confusion metrics".format(model_type))
+                print(metrics.confusion_matrix(y_test, predicted_y))
 
-        # Split the data into train, dev, and test sets
-        X_train, X_dev, X_test, y_train, y_dev, y_test = split_train_dev_test(data, digits.target, test_size, dev_size)
 
-        # Define model parameters
-        model_params = best_hparams  # Use the best hyperparameters
+print("svm-tree Confusion metrics".format())
+print(metrics.confusion_matrix(model_preds['svm'], model_preds['tree']))
 
-        # Train a model using the training data
-        model = train_model(X_train, y_train, model_params)
-
-        # Evaluate the model on the training, dev, and test sets
-        train_acc = accuracy_score(y_train, model.predict(X_train))
-        dev_acc = accuracy_score(y_dev, model.predict(X_dev))
-        test_acc = accuracy_score(y_test, model.predict(X_test))
-
-        # Print the results
-        print(f"Test Size={test_size}, Dev Size={dev_size}, Train Size={train_size:.2f}")
-        print(f"Train Accuracy={train_acc:.2f}, Dev Accuracy={dev_acc:.2f}, Test Accuracy={test_acc:.2f}")
-        print("="*50)  # Separate results for different combinations
+print("binarized predictions")
+print(metrics.confusion_matrix(binary_preds['svm'], binary_preds['tree'], labels=[True, False]))
+print("binarized predictions -- normalized over true labels")
+print(metrics.confusion_matrix(binary_preds['svm'], binary_preds['tree'], labels=[True, False] , normalize='true'))
+print("binarized predictions -- normalized over pred  labels")
+print(metrics.confusion_matrix(binary_preds['svm'], binary_preds['tree'], labels=[True, False] , normalize='pred'))
+        
+# print(pd.DataFrame(results).groupby('model_type').describe().T)
+                
