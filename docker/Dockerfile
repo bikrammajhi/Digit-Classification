@@ -6,5 +6,7 @@ COPY . /digits/
 RUN pip3 install -r /digits/requirement.txt
 # CMD ["echo", "our first cmd line"]
 WORKDIR /digits/
-CMD ["python", "experiment.py"]
+ENV FLASK_APP=API/digit_prediction
+EXPOSE 80
+CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
 # RUN pytest
