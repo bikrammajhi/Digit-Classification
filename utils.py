@@ -10,13 +10,13 @@ def find_acc(model, X_test, y_test):
 
 def train_model(x, y, model_params, model_type="svm"):
     if model_type == "svm":
-        # Create a classifier: a support vector classifier
+
         clf = svm.SVC
     if model_type == "tree":
-        # Create a classifier: a decision tree classifier
+
         clf = tree.DecisionTreeClassifier
     if model_type == "lr":
-        # Create a classifier: a decision tree classifier
+
         clf = linear_model.LogisticRegression
     model = clf(**model_params)
     # train the model
