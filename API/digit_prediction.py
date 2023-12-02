@@ -21,9 +21,8 @@ def COMPARE():
     JSON_OUT = request.get_json()
     IMG1  = []
     img_2 = []
-    for i in JSON_OUT["input1"]:    
+    for i,j in zip(JSON_OUT["input1"],JSON_OUT["input2"]):    
         IMG1.append(float(i))
-    for i in JSON_OUT["input2"]:    
-        img_2.append(float(i))
+        img_2.append(float(j))
     model = load("models/svm_gamma:0.001_C:1.joblib")
     return  str(model.predict(np.array(IMG1).reshape(-1,64)) == model.predict(np.array(img_2).reshape(-1,64)))
