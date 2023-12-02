@@ -24,4 +24,4 @@ jobs:
             docker build -f docker/Dockerfile . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/bikram:${{ github.sha }}
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/bikram:${{ github.sha }}
 
-  
+
